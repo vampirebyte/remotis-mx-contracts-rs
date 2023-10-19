@@ -70,6 +70,16 @@ pub trait MxContractsRs: default_issue_callbacks::DefaultIssueCallbacksModule + 
             _ => sc_panic!("Wrong License type"),
         };
 
+        let mut uris = ManagedVec::new();
+        let uri = match license {
+            1 => ManagedBuffer::from(b"ipfs_link"),
+            2 => ManagedBuffer::from(b"ipfs_link"),
+            3 => ManagedBuffer::from(b"ipfs_link"),
+            4 => ManagedBuffer::from(b"ipfs_link"),
+            _ => sc_panic!("Wrong License type"),
+        };
+        uris.push(uri);
+
         let attributes = Attributes {
             boosts: stored.boosts,
             huds: stored.huds,
@@ -90,7 +100,7 @@ pub trait MxContractsRs: default_issue_callbacks::DefaultIssueCallbacksModule + 
             &ManagedBuffer::new(),
             duration,
             attributes,
-            &ManagedVec::new(),
+            &uris,
         );
         self.send().direct_esdt(
             &recipient,
