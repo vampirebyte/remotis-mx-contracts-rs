@@ -50,8 +50,8 @@ pub trait MxContractsRs: default_issue_callbacks::DefaultIssueCallbacksModule + 
         self.token_id().issue_and_set_all_roles(
             EsdtTokenType::NonFungible,
             self.call_value().egld_value().clone_value(),
-            ManagedBuffer::from(b"Subscription"),
-            ManagedBuffer::from(b"SUB"),
+            ManagedBuffer::from(b"Remotis Racing Licenses"),
+            ManagedBuffer::from(b"RRL"),
             0,
             None,
         )
@@ -60,7 +60,9 @@ pub trait MxContractsRs: default_issue_callbacks::DefaultIssueCallbacksModule + 
     #[only_owner]
     #[endpoint(mintLicense)]
     fn mint_license(&self, recipient: ManagedAddress, license: u8, duration: u64, battery: u64, renewable: bool, rechargeable: bool) {
+        require!(!self.token_id().is_empty(), "Collection not issue");
         require!(!self.fixed_attributes(license).is_empty(), "Set fixed attributes");
+
         let stored = self.fixed_attributes(license).get();
 
         let license_type = match license {
@@ -130,9 +132,19 @@ pub trait MxContractsRs: default_issue_callbacks::DefaultIssueCallbacksModule + 
     }
 
     #[only_owner]
-    #[endpoint(setRoleToContract)]
-    fn set_role_to_contract(&self, address: ManagedAddress) {
-        unimplemented!()
+    #[endpoint(setUpdateAttributesRoleTo)]
+    fn set_update_attributes_role_to(&self, address: ManagedAddress) {
+        require!(!self.token_id().is_empty(), "Collection not issue");
+
+        self.send()
+            .esdt_system_sc_proxy()
+            .set_special_roles(
+                &address,
+                self.token_id().get_token_id_ref(),
+                [EsdtLocalRole::NftUpdateAttributes][..].iter().cloned(),
+            )
+            .async_call()
+            .call_and_exit()
     }
 
     #[view(getTokenId)]
