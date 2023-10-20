@@ -44,6 +44,7 @@ pub trait MxContractsRs: default_issue_callbacks::DefaultIssueCallbacksModule + 
     }
         
     #[only_owner]
+    #[payable("*")]
     #[endpoint(issueCollection)]
     fn issue_collection(&self) {
         self.token_id().issue_and_set_all_roles(
@@ -72,10 +73,10 @@ pub trait MxContractsRs: default_issue_callbacks::DefaultIssueCallbacksModule + 
 
         let mut uris = ManagedVec::new();
         let uri = match license {
-            1 => ManagedBuffer::from(b"ipfs_link"),
-            2 => ManagedBuffer::from(b"ipfs_link"),
-            3 => ManagedBuffer::from(b"ipfs_link"),
-            4 => ManagedBuffer::from(b"ipfs_link"),
+            1 => ManagedBuffer::from(b"https://ipfs.io/ipfs/QmaSBad87GFUaLXi1FjgkiqRyQ3Fbc5GENNtzEdKYro3y4"),
+            2 => ManagedBuffer::from(b"https://ipfs.io/ipfs/QmSRkhriLVWBLATWC946JXYdy2zX1jSSNAce4zRanTBdqY"),
+            3 => ManagedBuffer::from(b"https://ipfs.io/ipfs/QmbAEp9VFGV82UiL1LMrki46fZ5nD7AEpr7L5NzYNz1nEw"),
+            4 => ManagedBuffer::from(b"https://ipfs.io/ipfs/QmZR4sKhySN2nYftJu7hCCJ9UteXgNDuZhTDyXEfaZFimY"),
             _ => sc_panic!("Wrong License type"),
         };
         uris.push(uri);
@@ -95,7 +96,7 @@ pub trait MxContractsRs: default_issue_callbacks::DefaultIssueCallbacksModule + 
         let nonce = self.create_subscription_nft(
             self.token_id().get_token_id_ref(),
             &BigUint::from(1u8),
-            &ManagedBuffer::from(b"License"),
+            &ManagedBuffer::from(b"Remotis Racing License"),
             &BigUint::from(10u8),
             &ManagedBuffer::new(),
             duration,
