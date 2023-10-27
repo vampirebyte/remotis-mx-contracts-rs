@@ -25,12 +25,12 @@ multiversx_sc_wasm_adapter::endpoints! {
         setFixedAttributes => set_fixed_attributes
         issueCollection => issue_collection
         mintLicense => mint_license
-        freezeLicense => freeze_license
-        unfreezeLicense => unfreeze_license
-        wipeLicense => wipe_license
-        setRoleToContract => set_role_to_contract
+        setUpdateAttributesRoleTo => set_update_attributes_role_to
+        getAttributes => get_attributes
         getTokenId => token_id
         getFixedAttributes => fixed_attributes
+        addUserToAdminList => add_to_admin_list
+        removeFromAdminList => remove_from_admin_list
     )
 }
 

@@ -3,6 +3,8 @@
 multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
 
+mod admin;
+
 use multiversx_sc_modules::{default_issue_callbacks, subscription};
 
 #[derive(TypeAbi, TopEncode, TopDecode)]
@@ -13,7 +15,7 @@ pub struct FixedAttributes {
     pub max_rpm: u64,
 }
 
-#[derive(TypeAbi, NestedEncode, NestedDecode)]
+#[derive(TypeAbi, TopEncode, TopDecode, NestedEncode, NestedDecode)]
 pub struct Attributes<M: ManagedTypeApi> {
     pub boosts: u64,
     pub huds: u64,
@@ -27,14 +29,26 @@ pub struct Attributes<M: ManagedTypeApi> {
 }
 
 #[multiversx_sc::contract]
-pub trait MxContractsRs: default_issue_callbacks::DefaultIssueCallbacksModule + subscription::SubscriptionModule {
-    
+pub trait MxContractsRs:
+    default_issue_callbacks::DefaultIssueCallbacksModule
+    + subscription::SubscriptionModule
+    + admin::AdminModule
+{
     #[init]
     fn init(&self) {}
-    
-    #[only_owner]
+
+    // admin only functions 
+
     #[endpoint(setFixedAttributes)]
-    fn set_fixed_attributes(&self, license_type: u8, boosts: u64, huds: u64, sounds: u64, max_rpm: u64) {
+    fn set_fixed_attributes(
+        &self,
+        license_type: u8,
+        boosts: u64,
+        huds: u64,
+        sounds: u64,
+        max_rpm: u64,
+    ) {
+        self.require_caller_is_admin();
         self.fixed_attributes(license_type).set(FixedAttributes {
             boosts,
             huds,
@@ -42,11 +56,11 @@ pub trait MxContractsRs: default_issue_callbacks::DefaultIssueCallbacksModule + 
             max_rpm,
         })
     }
-        
-    #[only_owner]
-    #[payable("*")]
+
+    #[payable("EGLD")]
     #[endpoint(issueCollection)]
     fn issue_collection(&self) {
+        self.require_caller_is_admin();
         self.token_id().issue_and_set_all_roles(
             EsdtTokenType::NonFungible,
             self.call_value().egld_value().clone_value(),
@@ -57,11 +71,22 @@ pub trait MxContractsRs: default_issue_callbacks::DefaultIssueCallbacksModule + 
         )
     }
 
-    #[only_owner]
     #[endpoint(mintLicense)]
-    fn mint_license(&self, recipient: ManagedAddress, license: u8, duration: u64, battery: u64, renewable: bool, rechargeable: bool) {
+    fn mint_license(
+        &self,
+        recipient: ManagedAddress,
+        license: u8,
+        duration: u64,
+        battery: u64,
+        renewable: bool,
+        rechargeable: bool,
+    ) {
+        self.require_caller_is_admin();
         require!(!self.token_id().is_empty(), "Collection not issue");
-        require!(!self.fixed_attributes(license).is_empty(), "Set fixed attributes");
+        require!(
+            !self.fixed_attributes(license).is_empty(),
+            "Set fixed attributes"
+        );
 
         let stored = self.fixed_attributes(license).get();
 
@@ -75,10 +100,18 @@ pub trait MxContractsRs: default_issue_callbacks::DefaultIssueCallbacksModule + 
 
         let mut uris = ManagedVec::new();
         let uri = match license {
-            1 => ManagedBuffer::from(b"https://ipfs.io/ipfs/QmaSBad87GFUaLXi1FjgkiqRyQ3Fbc5GENNtzEdKYro3y4"),
-            2 => ManagedBuffer::from(b"https://ipfs.io/ipfs/QmSRkhriLVWBLATWC946JXYdy2zX1jSSNAce4zRanTBdqY"),
-            3 => ManagedBuffer::from(b"https://ipfs.io/ipfs/QmbAEp9VFGV82UiL1LMrki46fZ5nD7AEpr7L5NzYNz1nEw"),
-            4 => ManagedBuffer::from(b"https://ipfs.io/ipfs/QmZR4sKhySN2nYftJu7hCCJ9UteXgNDuZhTDyXEfaZFimY"),
+            1 => ManagedBuffer::from(
+                b"https://ipfs.io/ipfs/QmaSBad87GFUaLXi1FjgkiqRyQ3Fbc5GENNtzEdKYro3y4",
+            ),
+            2 => ManagedBuffer::from(
+                b"https://ipfs.io/ipfs/QmSRkhriLVWBLATWC946JXYdy2zX1jSSNAce4zRanTBdqY",
+            ),
+            3 => ManagedBuffer::from(
+                b"https://ipfs.io/ipfs/QmbAEp9VFGV82UiL1LMrki46fZ5nD7AEpr7L5NzYNz1nEw",
+            ),
+            4 => ManagedBuffer::from(
+                b"https://ipfs.io/ipfs/QmZR4sKhySN2nYftJu7hCCJ9UteXgNDuZhTDyXEfaZFimY",
+            ),
             _ => sc_panic!("Wrong License type"),
         };
         uris.push(uri);
@@ -113,27 +146,33 @@ pub trait MxContractsRs: default_issue_callbacks::DefaultIssueCallbacksModule + 
         );
     }
 
-    #[only_owner]
-    #[endpoint(freezeLicense)]
-    fn freeze_license(&self, address: ManagedAddress) {
-        unimplemented!()
-    }
+    // #[endpoint(freezeLicense)]
+    // fn freeze_license(&self, nonce: u64, address: &ManagedAddress) {
+        //   self.require_caller_is_admin();
+        //   self.send()
+    //         .esdt_system_sc_proxy()
+    //         .freeze_nft(self.token_id().get_token_id_ref(), nonce, address);
+    // }
 
-    #[only_owner]
-    #[endpoint(unfreezeLicense)]
-    fn unfreeze_license(&self, address: ManagedAddress) {
-        unimplemented!()
-    }
+    // #[endpoint(unfreezeLicense)]
+    // fn unfreeze_license(&self, nonce: u64, address: &ManagedAddress) {
+        //   self.require_caller_is_admin();
+        //   self.send()
+    //         .esdt_system_sc_proxy()
+    //         .unfreeze_nft(self.token_id().get_token_id_ref(), nonce, address);
+    // }
 
-    #[only_owner]
-    #[endpoint(wipeLicense)]
-    fn wipe_license(&self, address: ManagedAddress) {
-        unimplemented!()
-    }
+    // #[endpoint(wipeLicense)]
+    // fn wipe_license(&self, nonce: u64, address: &ManagedAddress) {
+        //   self.require_caller_is_admin();
+        //   self.send()
+    //         .esdt_system_sc_proxy()
+    //         .wipe_nft(self.token_id().get_token_id_ref(), nonce, address);
+    // }
 
-    #[only_owner]
     #[endpoint(setUpdateAttributesRoleTo)]
     fn set_update_attributes_role_to(&self, address: ManagedAddress) {
+        self.require_caller_is_admin();
         require!(!self.token_id().is_empty(), "Collection not issue");
 
         self.send()
@@ -146,6 +185,14 @@ pub trait MxContractsRs: default_issue_callbacks::DefaultIssueCallbacksModule + 
             .async_call()
             .call_and_exit()
     }
+
+
+    #[view(getAttributes)]
+    fn get_attributes(&self, nonce: u64) -> Attributes<Self::Api> {
+        self.get_subscription_attributes(self.token_id().get_token_id_ref(), nonce)
+    }
+
+    // storage
 
     #[view(getTokenId)]
     #[storage_mapper("tokenId")]

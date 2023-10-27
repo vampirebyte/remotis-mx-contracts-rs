@@ -1,0 +1,100 @@
+{
+    "name": "mint nft",
+    "steps": [
+        {
+            "step": "externalSteps",
+            "path": "init.scen.json"
+        },
+        {
+            "step": "scCall",
+            "id": "not-admin-mint",
+            "tx": {
+                "from": "address:user",
+                "to": "sc:mx-contracts-rs",
+                "function": "mintLicense",
+                "arguments": [
+                    "address:user",
+                    "1",
+                    "2",
+                    "0",
+                    "true",
+                    "false"
+                ],
+                "gasLimit": "20,000,000",
+                "gasPrice": "0"
+            },
+            "expect": {
+                "out": [],
+                "status": "4",
+                "message": "str:Item not whitelisted",
+                "logs": "*",
+                "gas": "*",
+                "refund": "*"
+            }
+        },
+        {
+            "step": "scCall",
+            "id": "attributes-not-set-mint",
+            "tx": {
+                "from": "address:owner",
+                "to": "sc:mx-contracts-rs",
+                "function": "mintLicense",
+                "arguments": [
+                    "address:user",
+                    "1",
+                    "2",
+                    "0",
+                    "true",
+                    "false"
+                ],
+                "gasLimit": "20,000,000",
+                "gasPrice": "0"
+            },
+            "expect": {
+                "out": [],
+                "status": "4",
+                "message": "str:Set fixed attributes",
+                "logs": "*",
+                "gas": "*",
+                "refund": "*"
+            }
+        },
+        {
+            "step": "scCall",
+            "id": "set-fixed-attributes",
+            "tx": {
+                "from": "address:owner",
+                "to": "sc:mx-contracts-rs",
+                "function": "setFixedAttributes",
+                "arguments": [
+                    "u8:1",
+                    "u64:3",
+                    "u64:4",
+                    "u64:5",
+                    "u64:6"
+                ],
+                "gasLimit": "20,000,000",
+                "gasPrice": "0"
+            }
+        },
+        {
+            "step": "scCall",
+            "id": "create-NFT-1",
+            "tx": {
+                "from": "address:owner",
+                "to": "sc:mx-contracts-rs",
+                "function": "mintLicense",
+                "arguments": [
+                    "address:user",
+                    "1",
+                    "2",
+                    "0",
+                    "true",
+                    "false"
+                ],
+                "gasLimit": "20,000,000",
+                "gasPrice": "0"
+            }
+        }
+    ]
+}
