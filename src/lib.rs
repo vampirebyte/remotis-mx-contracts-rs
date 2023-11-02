@@ -37,7 +37,7 @@ pub trait MxContractsRs:
     #[init]
     fn init(&self) {}
 
-    // admin only functions 
+    // admin only functions
 
     #[endpoint(setFixedAttributes)]
     fn set_fixed_attributes(
@@ -64,7 +64,7 @@ pub trait MxContractsRs:
         self.token_id().issue_and_set_all_roles(
             EsdtTokenType::NonFungible,
             self.call_value().egld_value().clone_value(),
-            ManagedBuffer::from(b"Remotis Racing Licenses"),
+            ManagedBuffer::from(b"Licenses"),
             ManagedBuffer::from(b"RRL"),
             0,
             None,
@@ -82,7 +82,7 @@ pub trait MxContractsRs:
         rechargeable: bool,
     ) {
         self.require_caller_is_admin();
-        require!(!self.token_id().is_empty(), "Collection not issue");
+        require!(!self.token_id().is_empty(), "Collection not issued");
         require!(
             !self.fixed_attributes(license).is_empty(),
             "Set fixed attributes"
@@ -91,10 +91,10 @@ pub trait MxContractsRs:
         let stored = self.fixed_attributes(license).get();
 
         let license_type = match license {
-            1 => ManagedBuffer::from(b"Amateur"),
-            2 => ManagedBuffer::from(b"Specialist"),
-            3 => ManagedBuffer::from(b"Expert"),
-            4 => ManagedBuffer::from(b"Legend"),
+            1 => ManagedBuffer::from(b"Remotis Amateur License"),
+            2 => ManagedBuffer::from(b"Remotis Specialist License"),
+            3 => ManagedBuffer::from(b"Remotis Expert License"),
+            4 => ManagedBuffer::from(b"Remotis Legend License"),
             _ => sc_panic!("Wrong License type"),
         };
 
@@ -132,7 +132,7 @@ pub trait MxContractsRs:
             self.token_id().get_token_id_ref(),
             &BigUint::from(1u8),
             &ManagedBuffer::from(b"Remotis Racing License"),
-            &BigUint::from(10u8),
+            &BigUint::from(1000u32),
             &ManagedBuffer::new(),
             duration,
             attributes,
@@ -148,24 +148,24 @@ pub trait MxContractsRs:
 
     // #[endpoint(freezeLicense)]
     // fn freeze_license(&self, nonce: u64, address: &ManagedAddress) {
-        //   self.require_caller_is_admin();
-        //   self.send()
+    //   self.require_caller_is_admin();
+    //   self.send()
     //         .esdt_system_sc_proxy()
     //         .freeze_nft(self.token_id().get_token_id_ref(), nonce, address);
     // }
 
     // #[endpoint(unfreezeLicense)]
     // fn unfreeze_license(&self, nonce: u64, address: &ManagedAddress) {
-        //   self.require_caller_is_admin();
-        //   self.send()
+    //   self.require_caller_is_admin();
+    //   self.send()
     //         .esdt_system_sc_proxy()
     //         .unfreeze_nft(self.token_id().get_token_id_ref(), nonce, address);
     // }
 
     // #[endpoint(wipeLicense)]
     // fn wipe_license(&self, nonce: u64, address: &ManagedAddress) {
-        //   self.require_caller_is_admin();
-        //   self.send()
+    //   self.require_caller_is_admin();
+    //   self.send()
     //         .esdt_system_sc_proxy()
     //         .wipe_nft(self.token_id().get_token_id_ref(), nonce, address);
     // }
@@ -185,7 +185,6 @@ pub trait MxContractsRs:
             .async_call()
             .call_and_exit()
     }
-
 
     #[view(getAttributes)]
     fn get_attributes(&self, nonce: u64) -> Attributes<Self::Api> {
