@@ -5,8 +5,6 @@ edition = "2021"
 publish = false
 authors = [ "you",]
 
-[dev-dependencies]
-
 [dependencies.mx-contracts-rs]
 path = ".."
 

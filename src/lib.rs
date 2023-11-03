@@ -148,24 +148,24 @@ pub trait MxContractsRs:
 
     // #[endpoint(freezeLicense)]
     // fn freeze_license(&self, nonce: u64, address: &ManagedAddress) {
-    //   self.require_caller_is_admin();
-    //   self.send()
+    //     self.require_caller_is_admin();
+    //     self.send()
     //         .esdt_system_sc_proxy()
     //         .freeze_nft(self.token_id().get_token_id_ref(), nonce, address);
     // }
 
     // #[endpoint(unfreezeLicense)]
     // fn unfreeze_license(&self, nonce: u64, address: &ManagedAddress) {
-    //   self.require_caller_is_admin();
-    //   self.send()
+    //     self.require_caller_is_admin();
+    //     self.send()
     //         .esdt_system_sc_proxy()
     //         .unfreeze_nft(self.token_id().get_token_id_ref(), nonce, address);
     // }
 
     // #[endpoint(wipeLicense)]
     // fn wipe_license(&self, nonce: u64, address: &ManagedAddress) {
-    //   self.require_caller_is_admin();
-    //   self.send()
+    //     self.require_caller_is_admin();
+    //     self.send()
     //         .esdt_system_sc_proxy()
     //         .wipe_nft(self.token_id().get_token_id_ref(), nonce, address);
     // }
@@ -181,6 +181,54 @@ pub trait MxContractsRs:
                 &address,
                 self.token_id().get_token_id_ref(),
                 [EsdtLocalRole::NftUpdateAttributes][..].iter().cloned(),
+            )
+            .async_call()
+            .call_and_exit()
+    }
+
+    #[endpoint(setMintRoleTo)]
+    fn set_mint_role_to(&self, address: ManagedAddress) {
+        self.require_caller_is_admin();
+        require!(!self.token_id().is_empty(), "Collection not issue");
+
+        self.send()
+            .esdt_system_sc_proxy()
+            .set_special_roles(
+                &address,
+                self.token_id().get_token_id_ref(),
+                [EsdtLocalRole::NftCreate][..].iter().cloned(),
+            )
+            .async_call()
+            .call_and_exit()
+    }
+
+    #[endpoint(setBurnRoleTo)]
+    fn set_burn_role_to(&self, address: ManagedAddress) {
+        self.require_caller_is_admin();
+        require!(!self.token_id().is_empty(), "Collection not issue");
+
+        self.send()
+            .esdt_system_sc_proxy()
+            .set_special_roles(
+                &address,
+                self.token_id().get_token_id_ref(),
+                [EsdtLocalRole::NftBurn][..].iter().cloned(),
+            )
+            .async_call()
+            .call_and_exit()
+    }
+
+    #[endpoint(setAddUrisRoleTo)]
+    fn set_add_uris_role_to(&self, address: ManagedAddress) {
+        self.require_caller_is_admin();
+        require!(!self.token_id().is_empty(), "Collection not issue");
+
+        self.send()
+            .esdt_system_sc_proxy()
+            .set_special_roles(
+                &address,
+                self.token_id().get_token_id_ref(),
+                [EsdtLocalRole::NftAddUri][..].iter().cloned(),
             )
             .async_call()
             .call_and_exit()
