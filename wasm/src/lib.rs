@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////////
 
 // Init:                                 1
-// Endpoints:                            9
+// Endpoints:                           16
 // Async Callback:                       1
-// Total number of exported functions:  11
+// Total number of exported functions:  18
 
 #![no_std]
 
@@ -22,10 +22,17 @@ multiversx_sc_wasm_adapter::endpoints! {
     mx_contracts_rs
     (
         init => init
-        setFixedAttributes => set_fixed_attributes
         issueCollection => issue_collection
+        setLocalRoles => set_local_roles
+        setFixedAttributes => set_fixed_attributes
         mintLicense => mint_license
+        freezeLicense => freeze_license
+        unfreezeLicense => unfreeze_license
+        wipeLicense => wipe_license
         setUpdateAttributesRoleTo => set_update_attributes_role_to
+        setMintRoleTo => set_mint_role_to
+        setBurnRoleTo => set_burn_role_to
+        setAddUrisRoleTo => set_add_uris_role_to
         getAttributes => get_attributes
         getTokenId => token_id
         getFixedAttributes => fixed_attributes

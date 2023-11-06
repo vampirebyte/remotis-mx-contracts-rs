@@ -5,7 +5,7 @@ multiversx_sc::derive_imports!();
 
 mod admin;
 
-use multiversx_sc_modules::{default_issue_callbacks, subscription};
+use multiversx_sc_modules::subscription;
 
 #[derive(TypeAbi, TopEncode, TopDecode)]
 pub struct FixedAttributes {
@@ -29,15 +29,84 @@ pub struct Attributes<M: ManagedTypeApi> {
 }
 
 #[multiversx_sc::contract]
-pub trait MxContractsRs:
-    default_issue_callbacks::DefaultIssueCallbacksModule
-    + subscription::SubscriptionModule
-    + admin::AdminModule
-{
+#[esdt_attribute("boosts", u64)]
+#[esdt_attribute("huds", u64)]
+#[esdt_attribute("sounds", u64)]
+#[esdt_attribute("races_won", u64)]
+#[esdt_attribute("max_rpm", u64)]
+#[esdt_attribute("battery", u64)]
+#[esdt_attribute("license_type", ManagedBuffer)]
+#[esdt_attribute("renewable", bool)]
+#[esdt_attribute("rechargeable", bool)]
+pub trait MxContractsRs: subscription::SubscriptionModule + admin::AdminModule {
     #[init]
     fn init(&self) {}
 
-    // admin only functions
+    // Set up
+
+    #[payable("EGLD")]
+    #[endpoint(issueCollection)]
+    fn issue_collection(&self) {
+        self.require_caller_is_admin();
+        require!(self.token_id().is_empty(), "Token already issued");
+
+        let payment_amount = self.call_value().egld_value();
+        self.send()
+            .esdt_system_sc_proxy()
+            .issue_non_fungible(
+                payment_amount.clone_value(),
+                &ManagedBuffer::from(b"Licenses"),
+                &ManagedBuffer::from(b"RRL"),
+                NonFungibleTokenProperties {
+                    can_freeze: true,
+                    can_wipe: true,
+                    can_pause: true,
+                    can_transfer_create_role: true,
+                    can_change_owner: true,
+                    can_upgrade: true,
+                    can_add_special_roles: true,
+                },
+            )
+            .async_call()
+            .with_callback(self.callbacks().issue_callback())
+            .call_and_exit()
+    }
+
+    #[callback]
+    fn issue_callback(
+        &self,
+        #[call_result] result: ManagedAsyncCallResult<EgldOrEsdtTokenIdentifier>,
+    ) {
+        match result {
+            ManagedAsyncCallResult::Ok(token_id) => {
+                self.token_id().set(&token_id.unwrap_esdt());
+            }
+            ManagedAsyncCallResult::Err(_) => {
+                let caller = self.blockchain().get_owner_address();
+                let returned = self.call_value().egld_or_single_esdt();
+                if returned.token_identifier.is_egld() && returned.amount > 0 {
+                    self.send()
+                        .direct(&caller, &returned.token_identifier, 0, &returned.amount);
+                }
+            }
+        }
+    }
+
+    #[endpoint(setLocalRoles)]
+    fn set_local_roles(&self) {
+        self.require_caller_is_admin();
+        require!(!self.token_id().is_empty(), "Token not issued");
+
+        self.send()
+            .esdt_system_sc_proxy()
+            .set_special_roles(
+                &self.blockchain().get_sc_address(),
+                &self.token_id().get(),
+                [EsdtLocalRole::NftCreate][..].iter().cloned(),
+            )
+            .async_call()
+            .call_and_exit()
+    }
 
     #[endpoint(setFixedAttributes)]
     fn set_fixed_attributes(
@@ -57,19 +126,7 @@ pub trait MxContractsRs:
         })
     }
 
-    #[payable("EGLD")]
-    #[endpoint(issueCollection)]
-    fn issue_collection(&self) {
-        self.require_caller_is_admin();
-        self.token_id().issue_and_set_all_roles(
-            EsdtTokenType::NonFungible,
-            self.call_value().egld_value().clone_value(),
-            ManagedBuffer::from(b"Licenses"),
-            ManagedBuffer::from(b"RRL"),
-            0,
-            None,
-        )
-    }
+    // create and send license
 
     #[endpoint(mintLicense)]
     fn mint_license(
@@ -129,7 +186,7 @@ pub trait MxContractsRs:
         };
 
         let nonce = self.create_subscription_nft(
-            self.token_id().get_token_id_ref(),
+            &self.token_id().get(),
             &BigUint::from(1u8),
             &ManagedBuffer::from(b"Remotis Racing License"),
             &BigUint::from(1000u32),
@@ -140,35 +197,43 @@ pub trait MxContractsRs:
         );
         self.send().direct_esdt(
             &recipient,
-            self.token_id().get_token_id_ref(),
+            &self.token_id().get(),
             nonce,
             &BigUint::from(1u8),
         );
     }
 
-    // #[endpoint(freezeLicense)]
-    // fn freeze_license(&self, nonce: u64, address: &ManagedAddress) {
-    //     self.require_caller_is_admin();
-    //     self.send()
-    //         .esdt_system_sc_proxy()
-    //         .freeze_nft(self.token_id().get_token_id_ref(), nonce, address);
-    // }
+    // management functions
 
-    // #[endpoint(unfreezeLicense)]
-    // fn unfreeze_license(&self, nonce: u64, address: &ManagedAddress) {
-    //     self.require_caller_is_admin();
-    //     self.send()
-    //         .esdt_system_sc_proxy()
-    //         .unfreeze_nft(self.token_id().get_token_id_ref(), nonce, address);
-    // }
+    #[endpoint(freezeLicense)]
+    fn freeze_license(&self, nonce: u64, address: &ManagedAddress) {
+        self.require_caller_is_admin();
+        self.send()
+            .esdt_system_sc_proxy()
+            .freeze_nft(&self.token_id().get(), nonce, address)
+            .async_call()
+            .call_and_exit();
+    }
 
-    // #[endpoint(wipeLicense)]
-    // fn wipe_license(&self, nonce: u64, address: &ManagedAddress) {
-    //     self.require_caller_is_admin();
-    //     self.send()
-    //         .esdt_system_sc_proxy()
-    //         .wipe_nft(self.token_id().get_token_id_ref(), nonce, address);
-    // }
+    #[endpoint(unfreezeLicense)]
+    fn unfreeze_license(&self, nonce: u64, address: &ManagedAddress) {
+        self.require_caller_is_admin();
+        self.send()
+            .esdt_system_sc_proxy()
+            .unfreeze_nft(&self.token_id().get(), nonce, address)
+            .async_call()
+            .call_and_exit();
+    }
+
+    #[endpoint(wipeLicense)]
+    fn wipe_license(&self, nonce: u64, address: &ManagedAddress) {
+        self.require_caller_is_admin();
+        self.send()
+            .esdt_system_sc_proxy()
+            .wipe_nft(&self.token_id().get(), nonce, address)
+            .async_call()
+            .call_and_exit();
+    }
 
     #[endpoint(setUpdateAttributesRoleTo)]
     fn set_update_attributes_role_to(&self, address: ManagedAddress) {
@@ -179,7 +244,7 @@ pub trait MxContractsRs:
             .esdt_system_sc_proxy()
             .set_special_roles(
                 &address,
-                self.token_id().get_token_id_ref(),
+                &self.token_id().get(),
                 [EsdtLocalRole::NftUpdateAttributes][..].iter().cloned(),
             )
             .async_call()
@@ -195,7 +260,7 @@ pub trait MxContractsRs:
             .esdt_system_sc_proxy()
             .set_special_roles(
                 &address,
-                self.token_id().get_token_id_ref(),
+                &self.token_id().get(),
                 [EsdtLocalRole::NftCreate][..].iter().cloned(),
             )
             .async_call()
@@ -211,7 +276,7 @@ pub trait MxContractsRs:
             .esdt_system_sc_proxy()
             .set_special_roles(
                 &address,
-                self.token_id().get_token_id_ref(),
+                &self.token_id().get(),
                 [EsdtLocalRole::NftBurn][..].iter().cloned(),
             )
             .async_call()
@@ -227,7 +292,7 @@ pub trait MxContractsRs:
             .esdt_system_sc_proxy()
             .set_special_roles(
                 &address,
-                self.token_id().get_token_id_ref(),
+                &self.token_id().get(),
                 [EsdtLocalRole::NftAddUri][..].iter().cloned(),
             )
             .async_call()
@@ -236,14 +301,14 @@ pub trait MxContractsRs:
 
     #[view(getAttributes)]
     fn get_attributes(&self, nonce: u64) -> Attributes<Self::Api> {
-        self.get_subscription_attributes(self.token_id().get_token_id_ref(), nonce)
+        self.get_subscription_attributes(&self.token_id().get(), nonce)
     }
 
     // storage
 
     #[view(getTokenId)]
     #[storage_mapper("tokenId")]
-    fn token_id(&self) -> NonFungibleTokenMapper;
+    fn token_id(&self) -> SingleValueMapper<TokenIdentifier>;
 
     #[view(getFixedAttributes)]
     #[storage_mapper("fixedAttributes")]
