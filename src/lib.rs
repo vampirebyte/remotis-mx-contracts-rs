@@ -5,7 +5,7 @@ multiversx_sc::derive_imports!();
 
 mod admin;
 
-use multiversx_sc_modules::subscription;
+use multiversx_sc_modules::subscription::{self, SubscriptionAttributes};
 
 #[derive(TypeAbi, TopEncode, TopDecode)]
 pub struct FixedAttributes {
@@ -29,15 +29,7 @@ pub struct Attributes<M: ManagedTypeApi> {
 }
 
 #[multiversx_sc::contract]
-#[esdt_attribute("boosts", u64)]
-#[esdt_attribute("huds", u64)]
-#[esdt_attribute("sounds", u64)]
-#[esdt_attribute("races_won", u64)]
-#[esdt_attribute("max_rpm", u64)]
-#[esdt_attribute("battery", u64)]
-#[esdt_attribute("license_type", ManagedBuffer)]
-#[esdt_attribute("renewable", bool)]
-#[esdt_attribute("rechargeable", bool)]
+#[esdt_attribute("RRL", SubscriptionAttributes<Attributes<Self::Api>>)]
 pub trait MxContractsRs: subscription::SubscriptionModule + admin::AdminModule {
     #[init]
     fn init(&self) {}
